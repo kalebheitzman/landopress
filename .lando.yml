@@ -1,0 +1,74 @@
+# information
+name: wordpress
+recipe: wordpress
+
+# configuration
+config:
+  php: '7.4'
+  composer_version: '2.0.9'
+  via: nginx
+  webroot: public
+  database: mariadb:10.4
+  xdebug: false
+  config:
+    # https://github.com/lando/lando/blob/master/plugins/lando-services/services/mariadb/my_custom.cnf
+    database: config/my-custom.cnf
+    # https://github.com/lando/lando/blob/master/plugins/lando-services/services/php/php.ini
+    php: config/php.ini
+    # https://github.com/lando/lando/blob/master/plugins/lando-services/services/nginx/nginx.conf
+    server: config/server.conf
+    # https://github.com/lando/lando/blob/master/plugins/lando-services/services/nginx/default.conf.tpl
+    vhosts: config/default.conf
+
+# events
+events:
+  pre-stop:
+    - appserver: echo "Backing up database..."
+    - appserver: wp db export --path=/app/wordpress
+    - appserver: echo "Database successfully backed up"
+    
+# services
+services:
+
+  # mailhog for intercepting mail in dev
+  mailhog:
+    type: mailhog:v1.0.0
+    portforward: true
+    hogfrom:
+      - appserver
+
+  # redis for object caching
+  redis:
+    type: redis:6
+    persist: true
+    portforward: false
+    config: 
+      server: config/redis.conf
+
+  # gulp integration
+  node:
+    type: node:14
+    globals:
+      gulp-cli: latest
+    
+# tooling
+tooling:
+  npm:
+    service: node
+  node:
+    service: node
+  gulp:
+    service: node
+  yarn:
+    service: node
+  php:
+    service: appserver
+  install:wordpress:
+    service: appserver
+    cmd:
+      - wp core download && wp config create --dbname=wordpress --dbuser=wordpress --dbpass=wordpress --dbhost=database
+
+# proxy urls
+proxy:
+  mailhog:
+    - mail.wordpress.lndo.site
