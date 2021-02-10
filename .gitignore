@@ -25,6 +25,7 @@ public/wp-content/plugins/hello.php
 
 # ignore specific themes
 public/wp-content/themes/twenty*/
+!public/wp-content/themes/twentytwentyone
 
 # ignore node/grunt dependency directories
 node_modules/
